@@ -104,7 +104,7 @@ Name: Fariz Rizky Haykal Abdillah
     - mysql
         - Login to the mysql as root and able to do query `./infra mysql`
 
-            ![Mysql Screenshot](docs/images/definition-of-done/bash-tools/mysql.png)
+            ![Mysql Screenshot](docs/images/definition-of-done/local-docker-compose/mysql.png)
 
     - redis
         - Login to the redis-cli and able to do query `./infra redis`
