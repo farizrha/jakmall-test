@@ -42,7 +42,7 @@ then
   docker exec -ti worker $2
 elif [[ ($1 = composer) && ($2 = $2) ]]
 then
-  docker exec -ti worker composer $2
+  docker exec composer $1 $2
 elif [[ ($1 = mysql) ]]
 then
   docker exec -ti mysql mysql -u root -p
