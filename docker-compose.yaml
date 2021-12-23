@@ -1,0 +1,134 @@
+version: '3'
+services:
+  nginx:
+    container_name: nginx-web
+    image: nginx-web
+    env_file:
+      - ./.env
+    environment:
+      - FASTCGI_PASS=php-fpm:9000
+      - DOCKER_COMPOSE_NGINX_HOST_PORT=${DOCKER_COMPOSE_NGINX_HOST_PORT}
+    build:
+      context: ./infrastructure/nginx/base
+    volumes:
+      - ./public:/var/www/html/public
+    ports:
+      - 80:${DOCKER_COMPOSE_NGINX_HOST_PORT}
+    depends_on:
+      - php-fpm
+    links:
+      - php-fpm
+    networks:
+      - net
+  php-fpm:
+    container_name: php-fpm
+    image: php-fpm
+    build:
+      context: ./infrastructure/php/base
+      target: builderfpm
+    env_file:
+      - ./infrastructure/php/.env.local
+      - ./.env
+    environment: 
+      - DOCKER_COMPOSE_USER="${DOCKER_COMPOSE_USER}"
+      - DOCKER_COMPOSE_USER_GROUP="${DOCKER_COMPOSE_USER_GROUP}"
+      - DB_HOST=mysql
+    volumes:
+      - ./:/var/www/html
+    user: "${DOCKER_COMPOSE_USER}:${DOCKER_COMPOSE_USER_GROUP}"
+    command: php-fpm
+    labels:
+      ofelia.enabled: "true"
+      ofelia.job-exec.datecron.schedule: "@every 1m"
+      ofelia.job-exec.datecron.command: "php artisan schedule:run"
+    depends_on:
+      - mysql
+      - redis
+      - mailhog
+      - worker
+    links:
+      - worker
+    networks:
+      - net
+  worker:
+    container_name: worker
+    image: php-cli
+    build:
+      context: ./infrastructure/php/base
+      target: buildercli
+    env_file:
+      - ./infrastructure/php/.env.local
+      - ./.env
+    environment:
+      - DB_HOST=mysql
+    volumes:
+      - ./:/var/www/html
+    command: php artisan queue:work
+    links:
+      - mysql
+    networks:
+      - net
+  scheduler:
+    container_name: scheduler
+    image: mcuadros/ofelia:v0.3.4
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - worker
+    command: daemon --docker
+    networks:
+      - net
+  mailhog:
+    container_name: mailhog
+    image: mailhog/mailhog:v1.0.1
+    env_file:
+      - ./.env
+    environment:
+      - DOCKER_COMPOSE_MAILHOG_HOST_PORT=${DOCKER_COMPOSE_MAILHOG_HOST_PORT}
+    ports:
+      - 8025:${DOCKER_COMPOSE_MAILHOG_HOST_PORT}
+    networks:
+      - net
+  mysql:
+    container_name: mysql
+    image: mysql:8.0.23
+    ports:
+      - 3306:3306
+    restart: unless-stopped
+    environment:
+      - "MYSQL_DATABASE=counter"
+      - "MYSQL_USER=user"
+      - "MYSQL_PASSWORD=secret"
+      - "MYSQL_ROOT_PASSWORD=secret"
+      - "MYSQL_ALLOW_EMPTY_PASSWORD='yes'"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - net
+  redis:
+    container_name: redis
+    image: redis:6.2.1-alpine
+    volumes:
+      - redis_data:/data
+    ports:
+     - "6379:6379"
+    networks:
+      - net
+  composer:
+    container_name: composer
+    image: composer:2.0.11
+    env_file:
+      - ./.env
+    command: tail -F anything
+    volumes:
+      - ./:/app
+    networks:
+      - net
+volumes:
+  mysql_data:
+    driver: "local"
+  redis_data:
+    driver: "local"
+networks:
+  net:
+    driver: bridge

@@ -1,0 +1,91 @@
+#!/bin/bash
+
+if [[ ($1 = init) ]]
+then
+  echo "FASTCGI_PASS=php-fpm:9000
+DOCKER_COMPOSE_NGINX_HOST_PORT=80
+DOCKER_COMPOSE_USER=www-data
+DOCKER_COMPOSE_USER_GROUP=www-data
+DOCKER_COMPOSE_MAILHOG_HOST_PORT=8025
+APP_KEY=" > .env
+  docker-compose build
+  docker-compose up -d
+  docker exec -ti composer composer install --ignore-platform-reqs
+  docker exec -ti worker php artisan key:generate
+  docker exec -ti worker php artisan migrate
+elif [[ ($1 = up) ]]
+then
+  docker-compose up -d
+elif [[ ($1 = down) ]]
+then
+  docker-compose down
+elif [[ ($1 = build) && ($2 = $2) && ($3 = $3) ]]
+then
+  docker-compose build $2 $3
+elif [[ ($1 = logs) && ($2 = $2) && ($3 = $3) ]]
+then
+  docker-compose logs $2 $3
+elif [[ ($1 = restart) && ($2 = $2) && ($3 = $3) ]]
+then
+  docker-compose restart $2 $3
+elif [[ ($1 = sh) && ($2 = $2) ]]
+then
+  docker exec -ti $2 /bin/sh
+elif [[ ($1 = artisan) && ($2 = $2) && ($3 = $3) ]]
+then
+  docker exec -ti worker php artisan $2 $3
+elif [[ ($1 = test) ]]
+then
+  docker exec -ti worker vendor/bin/phpunit
+elif [[ ($1 = test) && ($2 = $2) ]]
+then
+  docker exec -ti worker $2
+elif [[ ($1 = composer) && ($2 = $2) ]]
+then
+  docker exec -ti worker composer $2
+elif [[ ($1 = mysql) ]]
+then
+  docker exec -ti mysql mysql -u root -p
+elif [[ ($1 = redis) ]]
+then
+  docker exec -ti redis /bin/sh
+elif [[ ($1 = help) ]]
+then
+  echo "Usage:
+   infra command [arguments]"
+  echo "Available commands:
+   init                     Initialize the infrastructure
+   up                       Start the infrastructure
+   down                     Stop infrastructure
+   build [services?]        Build image for all or given services
+   logs [services?]         View logs for all or given services
+   restart [services?]      Restart all or given services
+   sh [services]            Exec sh in the given service
+   artisan [arguments?]     Exec artisan command in worker service
+   test [arguments?]        Run phpunit in the worker service
+   composer [arguments?]    Run composer in the composer service
+   mysql                    Run mysql cli as root in the mysql service
+   redis                    Run redis cli in the redis serivce
+   help                     Print all the available commands
+   release                  Use release image
+   local                    Use local image"
+else
+  echo "Usage:
+   infra command [arguments]"
+  echo "Available commands:
+   init                     Initialize the infrastructure
+   up                       Start the infrastructure
+   down                     Stop infrastructure
+   build [services?]        Build image for all or given services
+   logs [services?]         View logs for all or given services
+   restart [services?]      Restart all or given services
+   sh [services]            Exec sh in the given service
+   artisan [arguments?]     Exec artisan command in worker service
+   test [arguments?]        Run phpunit in the worker service
+   composer [arguments?]    Run composer in the composer service
+   mysql                    Run mysql cli as root in the mysql service
+   redis                    Run redis cli in the redis serivce
+   help                     Print all the available commands
+   release                  Use release image
+   local                    Use local image" 
+fi

@@ -1,0 +1,11 @@
+!bootstrap/cache
+*.*
+*docs*
+*test*
+*vendor*
+*infrastructure*
+**/*md
+**/*sqlite
+!artisan
+!composer.json
+!composer.lock
